@@ -17,6 +17,6 @@ if __name__ == "__main__":
     price_1 = calculate_price(base_price, has_orders=True)
     print(f"Есть заказы за месяц? Да  -> Итоговая цена: {price_1} руб. (Без изменений)")
     
-    # Сценарий 2: У клиента НЕТ заказов за месяц (has_orders = False)
+    # Сценыыарий 2: У клиента НЕТ заказов за месяц (has_orders = False)
     price_2 = calculate_price(base_price, has_orders=False)
     print(f"Есть заказы за месяц? Нет -> Итоговая цена: {price_2} руб. (Скидка 25% применена)")
