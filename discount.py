@@ -1,22 +1,48 @@
-def calculate_price(price, has_orders):
-    # Логика ветвления по блок-схеме:
-    # Если за месяц заказов НЕТ (not has_orders) -> применяется скидка 25%
-    if not has_orders:
-        return price * 0.75
-    else:
-        return price
+import pg8000
 
-# Проверочный запуск функции (Вывод: цена)
+# ЗАДАНИЕ 4.1: Функция расчета цены с точечной обработкой ошибок БД
+def calculate_price(product_id, base_price):
+    # 1. Обернули блок подключения к БД в try:
+    try:
+        connection = pg8000.connect(
+            host="localhost",
+            port=5432,
+            database="analysis_db",
+            user="postgres",
+            password="12345"
+        )
+        cursor = connection.cursor()
+        
+        query = "SELECT 0 AS orders_count FROM products WHERE id_товара = %s;"
+        cursor.execute(query, (product_id,))
+        
+        result = cursor.fetchone()
+        
+        if result:
+            orders_count = result if isinstance(result, (tuple, list)) else result
+        else:
+            orders_count = 0
+            
+        cursor.close()
+        connection.close()
+            
+        if orders_count == 0:
+            return base_price * 0.75
+        else:
+            return base_price
+
+    # 2. Добавили перехват конкретной ошибки базы данных pg8000.Error
+    except pg8000.Error as e:
+        # 3. Выводим сообщение об ошибке БД и возвращаем None по заданию
+        print(f"Ошибка БД: {e}")
+        return None
+        
+    # Дополнительный общий перехват на случай других ошибок Python (например, деление на ноль)
+    except Exception as e:
+        print(f"Другая ошибка: {e}")
+        return base_price
+
+# ЗАДАНИЕ 3.2: Тестовый запуск
 if __name__ == "__main__":
-    toy_name = "Плюшевый Мишка"
-    base_price = 1000.00
-    
-    print(f"Товар: {toy_name}, Базовая цена: {base_price} руб.")
-    
-    # Сценарий 1: У клиента ЕСТЬ заказы за месяц (has_orders = True)
-    price_1 = calculate_price(base_price, has_orders=True)
-    print(f"Есть заказы за месяц? Да  -> Итоговая цена: {price_1} руб. (Без изменений)")
-    
-    # Сценыыарий 2: У клиента НЕТ заказов за месяц (has_orders = False)
-    price_2 = calculate_price(base_price, has_orders=False)
-    print(f"Есть заказы за месяц? Нет -> Итоговая цена: {price_2} руб. (Скидка 25% применена)")
+    final_price = calculate_price(1, 1000)
+    print(f"Итоговая цена товара №1: {final_price} руб.")
