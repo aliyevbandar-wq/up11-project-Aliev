@@ -1,8 +1,18 @@
-import pg8000
+# 1. Функция add_product(name, price, category_id)
+def add_product(name, price, category_id):
+    # 2. Проверка: name не пустой, price > 0, category_id — число
+    if not name or str(name).strip() == "":
+        print("Ошибка: Название товара не должно быть пустым")
+        return False
+    if not isinstance(price, (int, float)) or price <= 0:
+        print("Ошибка: Цена должна быть числом строго больше нуля")
+        return False
+    if not isinstance(category_id, int):
+        print("Ошибка: Идентификатор категории должен быть целым числом")
+        return False
 
-# ЗАДАНИЕ 4.1: Функция расчета цены с точечной обработкой ошибок БД
-def calculate_price(product_id, base_price):
-    # 1. Обернули блок подключения к БД в try:
+    connection = None
+    cursor = None
     try:
         connection = pg8000.connect(
             host="localhost",
@@ -13,36 +23,44 @@ def calculate_price(product_id, base_price):
         )
         cursor = connection.cursor()
         
-        query = "SELECT 0 AS orders_count FROM products WHERE id_товара = %s;"
-        cursor.execute(query, (product_id,))
-        
-        result = cursor.fetchone()
-        
-        if result:
-            orders_count = result if isinstance(result, (tuple, list)) else result
-        else:
-            orders_count = 0
-            
-        cursor.close()
-        connection.close()
-            
-        if orders_count == 0:
-            return base_price * 0.75
-        else:
-            return base_price
+        # 3. try/except для INSERT (адаптировано под поля вашей таблицы products)
+        try:
+            query = "INSERT INTO products (наименование, базовая_цена) VALUES (%s, %s);"
+            cursor.execute(query, (name, price))
+        except pg8000.Error as e:
+            print(f"Ошибка выполнения INSERT: {e}")
+            return False
 
-    # 2. Добавили перехват конкретной ошибки базы данных pg8000.Error
+        # 4. try/except для conn.commit()
+        try:
+            connection.commit()
+            print(f"Товар '{name}' успешно добавлен в БД!")
+            return True
+        except pg8000.Error as e:
+            print(f"Ошибка при фиксации транзакции commit(): {e}")
+            return False
+
     except pg8000.Error as e:
-        # 3. Выводим сообщение об ошибке БД и возвращаем None по заданию
-        print(f"Ошибка БД: {e}")
-        return None
+        print(f"Ошибка подключения к БД: {e}")
+        return False
         
-    # Дополнительный общий перехват на случай других ошибок Python (например, деление на ноль)
-    except Exception as e:
-        print(f"Другая ошибка: {e}")
-        return base_price
-
-# ЗАДАНИЕ 3.2: Тестовый запуск
-if __name__ == "__main__":
-    final_price = calculate_price(1, 1000)
-    print(f"Итоговая цена товара №1: {final_price} руб.")
+    # 5. finally для гарантированного закрытия ресурсов
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+            if __name__ == "__main__":
+    print("--- ЗАПУСК ТЕСТОВ ОШИБОК ВСТАВКИ ---")
+    
+    print("Тест 1 (пустое имя):")
+    add_product("", 1000, 1)          
+    
+    print("\nТест 2 (цена < 0):")
+    add_product("Часы", -100, 1)      
+    
+    print("\nТест 3 (категории нет):")
+    add_product("Часы", 1000, 99999)  
+    
+    print("\nТест 4 (всё правильно):")
+    add_product("Часы", 1000, 1)      
