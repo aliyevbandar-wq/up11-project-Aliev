@@ -1,5 +1,5 @@
 import sys
-# Импорты графических компонентов PyQt6 (добавили импорт Qt для выравнивания текста)
+# Импорты графических компонентов PyQt6
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget
 from PyQt6.QtGui import QPixmap, QIcon
 from PyQt6.QtCore import Qt
@@ -12,9 +12,11 @@ class MainWindow(QMainWindow):
         # 1. Базовые параметры окна под тему «Мир игрушек»
         self.setWindowTitle("Мир игрушек — Каталог")
         self.resize(800, 600)
-        self.setWindowIcon(QIcon("resources/icon.png"))
         
-        # 2. Настройка корпоративного стиля приложения (Задание 5.1)
+        # ИКОНКА В УГЛУ ОКНА
+        self.setWindowIcon(QIcon("resources/Мир игрушек.ico"))
+        
+        # 2. Настройка корпоративного стиля приложения
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #FFFFFF;
@@ -32,7 +34,8 @@ class MainWindow(QMainWindow):
         
         # --- ЗАДАНИЕ 4.1: Добавление графического логотипа ---
         logo = QLabel()
-        logo.setPixmap(QPixmap("resources/image_kbwHUT.png")) # Файл логотипа
+        # Используем точное имя горизонтального логотипа из вашей папки resources
+        logo.setPixmap(QPixmap("resources/Мир игрушек.png"))  
         logo.setScaledContents(False)                         # Сохраняем пропорции
         logo.setAlignment(Qt.AlignmentFlag.AlignCenter)       # Центрируем картинку
         layout.addWidget(logo)
@@ -57,6 +60,12 @@ class MainWindow(QMainWindow):
 
 # Точка входа в программу и запуск графического цикла
 if __name__ == "__main__":
+    # Фикс для Windows, чтобы иконка корректно отображалась на панели задач отдельным приложением
+    if sys.platform == 'win32':
+        import ctypes
+        myappid = 'mycompany.myproduct.subproduct.version'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
     app = QApplication(sys.argv)
     
     window = MainWindow()
