@@ -1,4 +1,12 @@
 import sys
+import os  # Добавили для фикса кодировки
+
+# Принудительно заставляем Windows использовать UTF-8 для PostgreSQL
+os.environ["PGCLIENTENCODING"] = "utf-8"
+
+# Импортируем класс Database из вашего файла database.py
+from database import Database
+
 # Импорты графических компонентов PyQt6
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget
 from PyQt6.QtGui import QPixmap, QIcon
@@ -28,7 +36,7 @@ class MainWindow(QMainWindow):
             }
         """)
         
-        # 3. Создание центрального виджета и вертикального слоя
+        # 3. Создание центрального виджета и vertical слоя
         central = QWidget()
         layout = QVBoxLayout()
         
@@ -57,6 +65,14 @@ class MainWindow(QMainWindow):
         # Привязка слоя к центральному виджету формы
         central.setLayout(layout)
         self.setCentralWidget(central)
+
+        # --- ЗАДАНИЕ 4.1: Инициализация пула базы данных ---
+        self.db = Database()
+
+    # --- ЗАДАНИЕ 4.1: Автоматическое закрытие пула при закрытии окна приложения ---
+    def closeEvent(self, event):
+        self.db.close_all()  # Закрываем пул соединений базы "Мир игрушек"
+        event.accept()       # Разрешаем закрытие окна
 
 # Точка входа в программу и запуск графического цикла
 if __name__ == "__main__":
