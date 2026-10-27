@@ -12,6 +12,9 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QHBo
 from PyQt6.QtGui import QPixmap, QIcon
 from PyQt6.QtCore import Qt
 
+# --- Глобальный словарь для кэширования изображений (Домашнее задание) ---
+IMAGE_CACHE = {}
+
 # --- Функция создания карточки товара "Мир игрушек" ---
 def create_card(product):
     card = QWidget()
@@ -25,30 +28,59 @@ def create_card(product):
     
     main_layout = QHBoxLayout()
     
-    # --- АДАПТАЦИЯ ПОЛЕЙ ПОД ТЕМУ «МИР ИГРУШЕК» ---
+    # --- ИНДЕКСЫ ДАННЫХ ИЗ ВАШЕЙ БД ---
     product_name = product[1]  
     product_price = product[2] 
     
+    # --- БЛОК С ИЗОБРАЖЕНИЕМ И ЗАГЛУШКОЙ ---
     img_label = QLabel()
+    img_label.setFixedWidth(100)  # Ширина под масштабирование 100x100
+    img_label.setStyleSheet("border: none; background-color: transparent;")
     
-    if len(product) > 3 and product[3]:
+    # 1. Проверка на None для image_path и автогенерация имени файла по ID, если поля нет
+    if len(product) > 3 and product[3] is not None:
         image_name = product[3]
     else:
         image_name = f"IMG_14_{str(product[0]).zfill(3)}.png"
         
     full_image_path = f"resources/{image_name}"
+    ext = os.path.splitext(image_name)[1].lower()
     
-    # Подготовка к следующей паре: если фото нет на диске, ставим заглушку picture.png
-    if os.path.exists(full_image_path):
-        pixmap = QPixmap(full_image_path)
+    pixmap = None
+    
+    # 3. Дополнительно: Проверка допустимого формата файла (PNG, JPG)
+    if ext in ['.png', '.jpg', '.jpeg']:
+        # 3. Дополнительно: Кэширование изображений (проверяем, загружался ли файл ранее)
+        if full_image_path in IMAGE_CACHE:
+            pixmap = IMAGE_CACHE[full_image_path]
+        elif os.path.exists(full_image_path):
+            pixmap = QPixmap(full_image_path)
+            IMAGE_CACHE[full_image_path] = pixmap  # Сохраняем в кэш
+        else:
+            # 1. Логирование ненайденных файлов в консоль
+            print(f"[ЛОГ | ОШИБКА] Файл не найден на диске: '{full_image_path}'. Используется заглушка.")
     else:
-        pixmap = QPixmap("resources/picture.png") 
+        print(f"[ЛОГ | ПРЕДУПРЕЖДЕНИЕ] Неподдерживаемый формат файла: '{image_name}'")
+
+    # Если картинка не загрузилась или отсутствует, ставим picture.png
+    if pixmap is None or pixmap.isNull():
+        stub_path = "resources/picture.png"
+        if stub_path in IMAGE_CACHE:
+            pixmap = IMAGE_CACHE[stub_path]
+        else:
+            pixmap = QPixmap(stub_path)
+            IMAGE_CACHE[stub_path] = pixmap
         
-    img_label.setPixmap(pixmap.scaled(80, 80, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
-    img_label.setFixedWidth(80)
-    img_label.setStyleSheet("border: none; background-color: transparent;")
+    # Масштабирование до размеров 100x100 по условию задания
+    img_label.setPixmap(pixmap.scaled(
+        100, 
+        100, 
+        Qt.AspectRatioMode.KeepAspectRatio, 
+        Qt.TransformationMode.SmoothTransformation
+    ))
     main_layout.addWidget(img_label)
     
+    # --- БЛОК С ТЕКСТОВОЙ ИНФОРМАЦИЕЙ ---
     text_layout = QVBoxLayout()
     
     name_label = QLabel(f"<b>Игрушка:</b> {product_name}")
@@ -70,6 +102,7 @@ def create_card(product):
     
     main_layout.addLayout(text_layout)
     
+    # --- БЛОК С ЦЕНОЙ ---
     price_label = QLabel(f"{product_price} ₽")
     price_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #E74C3C; border: none; background-color: transparent;")
     price_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -111,7 +144,7 @@ class MainWindow(QMainWindow):
         
         # Левый невидимый блок-заглушка для удержания логотипа строго по центру
         left_spacer = QWidget()
-        left_spacer.setFixedWidth(90)  # Ширина совпадает с шириной кнопки выхода
+        left_spacer.setFixedWidth(90)  # Ширина совпадает с кнопкой выхода
         top_layout.addWidget(left_spacer)
         
         top_layout.addStretch()
