@@ -35,25 +35,28 @@ class Database:
         if self.connection_pool and conn:
             self.connection_pool.putconn(conn)
 
-    # --- ЗАДАНИЕ 6.1: Метод для получения товаров темы "Мир игрушек" ---
+    # ========================================================
+    # ВОТ СЮДА МЫ ЕГО НАПИСАЛИ (ЗАДАНИЕ 3.1):
+    # ========================================================
     def get_products(self):
-        """Получает список всех товаров из таблицы products (Мир игрушек)."""
+        """3.1. Метод получает список всех товаров из таблицы products."""
         conn = self.get_connection()
         if conn is None:
             return []
 
-        products_list = []
         try:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM products;")
-            products_list = cursor.fetchall()
-            cursor.close()
+            return cursor.fetchall()
         except Exception as e:
-            print(f"Ошибка при получении списка товаров: {e}")
+            print(f"Ошибка при выполнении запроса: {e}")
+            return []
         finally:
+            if "cursor" in locals():
+                cursor.close()
             self.release_connection(conn)
 
-        return products_list
+    # ========================================================
 
     def close_all(self):
         """Закрывает все соединения в пуле перед завершением программы."""
@@ -62,9 +65,8 @@ class Database:
             print("Пул соединений закрыт.")
 
 
-# Тестирование метода самостоятельно
+# Пример инициализации
 if __name__ == "__main__":
     db = Database()
-    # Проверяем работу метода
-    print("Список игрушек из базы данных:", db.get_products())
+    print("Список игрушек:", db.get_products())
     db.close_all()
