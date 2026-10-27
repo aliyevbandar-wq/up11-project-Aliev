@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QHBo
 from PyQt6.QtGui import QPixmap, QIcon
 from PyQt6.QtCore import Qt
 
-# --- Глобальный словарь для кэширования изображений (Домашнее задание) ---
+# Глобальный словарь для кэширования изображений (Домашнее задание)
 IMAGE_CACHE = {}
 
 # --- Функция создания карточки товара "Мир игрушек" ---
@@ -24,9 +24,14 @@ def create_card(product):
             border: 1px solid #E0E0E0;
             border-radius: 8px;
         }
+        QWidget:hover {
+            background-color: #F5F7FA;
+            border: 1px solid #BDC3C7;
+        }
     """)
     
     main_layout = QHBoxLayout()
+    main_layout.setContentsMargins(15, 10, 15, 10)
     
     # --- ИНДЕКСЫ ДАННЫХ ИЗ ВАШЕЙ БД ---
     product_name = product[1]  
@@ -34,7 +39,7 @@ def create_card(product):
     
     # --- БЛОК С ИЗОБРАЖЕНИЕМ И ЗАГЛУШКОЙ ---
     img_label = QLabel()
-    img_label.setFixedWidth(100)  # Ширина под масштабирование 100x100
+    img_label.setFixedSize(100, 100)
     img_label.setStyleSheet("border: none; background-color: transparent;")
     
     # 1. Проверка на None для image_path и автогенерация имени файла по ID, если поля нет
@@ -50,14 +55,12 @@ def create_card(product):
     
     # 3. Дополнительно: Проверка допустимого формата файла (PNG, JPG)
     if ext in ['.png', '.jpg', '.jpeg']:
-        # 3. Дополнительно: Кэширование изображений (проверяем, загружался ли файл ранее)
         if full_image_path in IMAGE_CACHE:
             pixmap = IMAGE_CACHE[full_image_path]
         elif os.path.exists(full_image_path):
             pixmap = QPixmap(full_image_path)
             IMAGE_CACHE[full_image_path] = pixmap  # Сохраняем в кэш
         else:
-            # 1. Логирование ненайденных файлов в консоль
             print(f"[ЛОГ | ОШИБКА] Файл не найден на диске: '{full_image_path}'. Используется заглушка.")
     else:
         print(f"[ЛОГ | ПРЕДУПРЕЖДЕНИЕ] Неподдерживаемый формат файла: '{image_name}'")
@@ -78,10 +81,12 @@ def create_card(product):
         Qt.AspectRatioMode.KeepAspectRatio, 
         Qt.TransformationMode.SmoothTransformation
     ))
+    img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
     main_layout.addWidget(img_label)
     
     # --- БЛОК С ТЕКСТОВОЙ ИНФОРМАЦИЕЙ ---
     text_layout = QVBoxLayout()
+    text_layout.setSpacing(4)
     
     name_label = QLabel(f"<b>Игрушка:</b> {product_name}")
     name_label.setStyleSheet("font-size: 16px; color: #2C3E50; border: none; background-color: transparent;")
@@ -101,15 +106,16 @@ def create_card(product):
     text_layout.addWidget(material_label)
     
     main_layout.addLayout(text_layout)
+    main_layout.addStretch()
     
     # --- БЛОК С ЦЕНОЙ ---
     price_label = QLabel(f"{product_price} ₽")
-    price_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #E74C3C; border: none; background-color: transparent;")
+    price_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #E74C3C; border: none; background-color: transparent;")
     price_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
     main_layout.addWidget(price_label)
     
     card.setLayout(main_layout)
-    card.setFixedHeight(110)
+    card.setFixedHeight(120)
     
     return card
 
@@ -120,56 +126,72 @@ class MainWindow(QMainWindow):
         super().__init__()
         
         self.setWindowTitle("Мир игрушек — Каталог")
-        self.resize(800, 600)
+        self.resize(850, 650)
         
-        self.setWindowIcon(QIcon("resources/IMG_14_001.png"))
+        # Четкая системная иконка .ico для заголовка окна и панели задач Windows
+        self.setWindowIcon(QIcon("resources/icon.ico"))
         
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #FFFFFF;
             }
             QWidget {
-                font-family: 'Calibri';
+                font-family: 'Segoe UI', 'Calibri';
                 font-size: 14px;
                 color: #000000;
             }
         """)
         
         central = QWidget()
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(central)
+        layout.setContentsMargins(20, 15, 20, 15)
         
-        # --- ВЕРХНЯЯ ПАНЕЛЬ С КНОПКОЙ ВЫХОДА И ВЫРОВНЕННЫМ ЛОГОТИПОМ ---
+        # --- ВЕРХНЯЯ ПАНЕЛЬ: ЛОГОТИП И ЗАГОЛОВОК СЛЕВА, КНОПКА СПРАВА ---
         top_layout = QHBoxLayout()
-        top_layout.setContentsMargins(0, 10, 0, 10)
+        top_layout.setSpacing(15) 
+        top_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Левый невидимый блок-заглушка для удержания логотипа строго по центру
-        left_spacer = QWidget()
-        left_spacer.setFixedWidth(90)  # Ширина совпадает с кнопкой выхода
-        top_layout.addWidget(left_spacer)
-        
-        top_layout.addStretch()
-        
-        # Логотип (центрируется за счёт stretch-интервалов и левого виджета)
+        # 1. Логотип слева (Размер увеличен до 150x150)
         logo = QLabel()
-        logo.setPixmap(QPixmap("resources/IMG_14_001.png").scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))  
-        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)       
+        logo.setFixedSize(150, 150)  
+        logo.setStyleSheet("border: none;")
+        
+        logo_pixmap = QPixmap("resources/logo.png")
+        if not logo_pixmap.isNull():
+            logo.setPixmap(logo_pixmap.scaled(150, 150, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        logo.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)       
         top_layout.addWidget(logo)
         
+        # 2. Текстовый заголовок сразу после логотипа
+        title_label = QLabel("Мир игрушек — Каталог")
+        title_label.setStyleSheet("""
+            font-size: 24px;
+            font-weight: bold;
+            color: #2C3E50;
+            border: none;
+        """)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        top_layout.addWidget(title_label)
+        
+        # Разделитель расталкивает блок (лого + заголовок) влево, а кнопку выхода вправо
         top_layout.addStretch()
         
-        # Кнопка выхода справа
+        # 3. Кнопка выхода справа
         self.btn_exit = QPushButton("Выход")
-        self.btn_exit.setFixedSize(90, 35)
+        self.btn_exit.setFixedSize(100, 35)
         self.btn_exit.setStyleSheet("""
             QPushButton {
                 background-color: #E74C3C;
                 color: white;
-                border-radius: 5px;
+                border-radius: 6px;
                 font-weight: bold;
                 border: none;
             }
             QPushButton:hover {
                 background-color: #C0392B;
+            }
+            QPushButton:pressed {
+                background-color: #962D22;
             }
         """)
         self.btn_exit.clicked.connect(self.close)
@@ -177,32 +199,43 @@ class MainWindow(QMainWindow):
         
         layout.addLayout(top_layout)
         
-        title_label = QLabel("Мир игрушек — Каталог")
-        title_label.setStyleSheet("""
-            font-size: 24px;
-            font-weight: bold;
-            color: #000000;
-            margin-top: 10px;
-            margin-bottom: 10px;
-        """)
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter) 
-        layout.addWidget(title_label)
+        # Небольшой пустой отступ снизу под шапкой
+        layout.addSpacing(10)
         
         # Подключение к базе данных
         self.db = Database()
-
-        # Получаем товары
         self.products = self.db.get_products()
         
         # Область прокрутки (QScrollArea)
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setStyleSheet("QScrollArea { border: none; background-color: transparent; }")
+        self.scroll_area.setStyleSheet("""
+            QScrollArea { 
+                border: none; 
+                background-color: transparent; 
+            }
+            QScrollBar:vertical {
+                border: none;
+                background: #F1F1F1;
+                width: 10px;
+                margin: 0px;
+                border-radius: 5px;
+            }
+            QScrollBar::handle:vertical {
+                background: #C1C1C1;
+                min-height: 20px;
+                border-radius: 5px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #A8A8A8;
+            }
+        """)
         
         self.scroll_widget = QWidget()
         self.scroll_widget.setStyleSheet("background-color: transparent;")
         
         self.cards_layout = QVBoxLayout(self.scroll_widget)
+        self.cards_layout.setSpacing(12)
         self.cards_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         
         # Отрисовка карточек
@@ -213,7 +246,6 @@ class MainWindow(QMainWindow):
         self.scroll_area.setWidget(self.scroll_widget)
         layout.addWidget(self.scroll_area)
         
-        central.setLayout(layout)
         self.setCentralWidget(central)
 
     def closeEvent(self, event):
