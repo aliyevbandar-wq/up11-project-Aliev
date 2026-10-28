@@ -1,21 +1,15 @@
 import sys
 import os
 
-# Принудительно заставляем Windows использовать UTF-8 для PostgreSQL
 os.environ["PGCLIENTENCODING"] = "utf-8"
 
-# Импортируем класс Database из вашего файла database.py
 from database import Database
-
-# Импорты графических компонентов PyQt6
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QScrollArea, QPushButton
 from PyQt6.QtGui import QPixmap, QIcon
 from PyQt6.QtCore import Qt
 
-# Глобальный словарь для кэширования изображений (Домашнее задание)
 IMAGE_CACHE = {}
 
-# --- Функция создания карточки товара "Мир игрушек" ---
 def create_card(product):
     card = QWidget()
     card.setStyleSheet("""
@@ -33,16 +27,13 @@ def create_card(product):
     main_layout = QHBoxLayout()
     main_layout.setContentsMargins(15, 10, 15, 10)
     
-    # --- ИНДЕКСЫ ДАННЫХ ИЗ ВАШЕЙ БД ---
     product_name = product[1]  
     product_price = product[2] 
     
-    # --- БЛОК С ИЗОБРАЖЕНИЕМ И ЗАГЛУШКОЙ ---
     img_label = QLabel()
     img_label.setFixedSize(100, 100)
     img_label.setStyleSheet("border: none; background-color: transparent;")
     
-    # 1. Проверка на None для image_path и автогенерация имени файла по ID, если поля нет
     if len(product) > 3 and product[3] is not None:
         image_name = product[3]
     else:
@@ -52,20 +43,15 @@ def create_card(product):
     ext = os.path.splitext(image_name)[1].lower()
     
     pixmap = None
-    
-    # 3. Дополнительно: Проверка допустимого формата файла (PNG, JPG)
     if ext in ['.png', '.jpg', '.jpeg']:
         if full_image_path in IMAGE_CACHE:
             pixmap = IMAGE_CACHE[full_image_path]
         elif os.path.exists(full_image_path):
             pixmap = QPixmap(full_image_path)
-            IMAGE_CACHE[full_image_path] = pixmap  # Сохраняем в кэш
+            IMAGE_CACHE[full_image_path] = pixmap
         else:
             print(f"[ЛОГ | ОШИБКА] Файл не найден на диске: '{full_image_path}'. Используется заглушка.")
-    else:
-        print(f"[ЛОГ | ПРЕДУПРЕЖДЕНИЕ] Неподдерживаемый формат файла: '{image_name}'")
 
-    # Если картинка не загрузилась или отсутствует, ставим picture.png
     if pixmap is None or pixmap.isNull():
         stub_path = "resources/picture.png"
         if stub_path in IMAGE_CACHE:
@@ -74,17 +60,10 @@ def create_card(product):
             pixmap = QPixmap(stub_path)
             IMAGE_CACHE[stub_path] = pixmap
         
-    # Масштабирование до размеров 100x100 по условию задания
-    img_label.setPixmap(pixmap.scaled(
-        100, 
-        100, 
-        Qt.AspectRatioMode.KeepAspectRatio, 
-        Qt.TransformationMode.SmoothTransformation
-    ))
+    img_label.setPixmap(pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
     img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
     main_layout.addWidget(img_label)
     
-    # --- БЛОК С ТЕКСТОВОЙ ИНФОРМАЦИЕЙ ---
     text_layout = QVBoxLayout()
     text_layout.setSpacing(4)
     
@@ -108,7 +87,6 @@ def create_card(product):
     main_layout.addLayout(text_layout)
     main_layout.addStretch()
     
-    # --- БЛОК С ЦЕНОЙ ---
     price_label = QLabel(f"{product_price} ₽")
     price_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #E74C3C; border: none; background-color: transparent;")
     price_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -120,120 +98,100 @@ def create_card(product):
     return card
 
 
-# Создание класса главного окна приложения
 class MainWindow(QMainWindow):
-    # Конструктор принимает аргумент role_id со значением по умолчанию (Задание 4.1)
     def __init__(self, role_id=None):
         super().__init__()
-        
-        # Сохраняем переданную роль для использования в разграничении прав
-        self.role_id = role_id
-        
+        self.role_id = role_id  
+        self.setup_ui()
+        self.setup_role_interface()
+
+    def setup_ui(self):
         self.setWindowTitle("Мир игрушек — Каталог")
-        self.resize(850, 650)
-        
-        # Четкая системная иконка .ico для заголовка окна и панели задач Windows
+        self.resize(1000, 650)  
         self.setWindowIcon(QIcon("resources/icon.ico"))
         
         self.setStyleSheet("""
-            QMainWindow {
-                background-color: #FFFFFF;
-            }
-            QWidget {
-                font-family: 'Segoe UI', 'Calibri';
-                font-size: 14px;
-                color: #000000;
-            }
+            QMainWindow { background-color: #FFFFFF; }
+            QWidget { font-family: 'Segoe UI', 'Calibri'; font-size: 14px; color: #000000; }
         """)
         
         central = QWidget()
         layout = QVBoxLayout(central)
         layout.setContentsMargins(20, 15, 20, 15)
         
-        # --- ВЕРХНЯЯ ПАНЕЛЬ: ЛОГОТИП И ЗАГОЛОВОК СЛЕВА, КНОПКА СПРАВА ---
         top_layout = QHBoxLayout()
-        top_layout.setSpacing(15) 
+        top_layout.setSpacing(12) 
         top_layout.setContentsMargins(0, 0, 0, 0)
         
-        # 1. Логотип слева (Задан точный компактный размер 50x50 пикселей)
         logo = QLabel()
-        logo.setFixedSize(50, 50)  
-        logo.setStyleSheet("border: none;")
-        
+        logo.setFixedSize(100, 100)  
         logo_pixmap = QPixmap("resources/logo.png")
         if not logo_pixmap.isNull():
-            logo.setPixmap(logo_pixmap.scaled(50, 50, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            logo.setPixmap(logo_pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
         logo.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)       
         top_layout.addWidget(logo)
         
-        # 2. Текстовый заголовок сразу после логотипа
         title_label = QLabel("Мир игрушек — Каталог")
-        title_label.setStyleSheet("""
-            font-size: 24px;
-            font-weight: bold;
-            color: #2C3E50;
-            border: none;
-        """)
-        title_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #2C3E50; border: none;")
         top_layout.addWidget(title_label)
         
-        # Разделитель расталкивает блок (лого + заголовок) влево, а кнопку выхода вправо
+        self.role_label = QLabel()
+        self.role_label.setStyleSheet("font-size: 13px; font-weight: bold; color: #7F8C8D; border: none; padding-left: 10px;")
+        top_layout.addWidget(self.role_label)
+        
         top_layout.addStretch()
         
-        # 3. Кнопка выхода справа
+        self.btn_add_product = QPushButton("Добавить товар")
+        self.btn_add_product.setFixedSize(120, 35)
+        self.btn_add_product.setStyleSheet("""
+            QPushButton { background-color: #34495E; color: white; border-radius: 6px; font-weight: bold; border: none; }
+            QPushButton:hover { background-color: #2C3E50; }
+        """)
+        top_layout.addWidget(self.btn_add_product)
+        
+        self.order_button = QPushButton("Оформить заказ")
+        self.order_button.setFixedSize(130, 35)
+        self.order_button.setStyleSheet("""
+            QPushButton { background-color: #27AE60; color: white; border-radius: 6px; font-weight: bold; border: none; }
+            QPushButton:hover { background-color: #219653; }
+        """)
+        
+        self.manager_button = QPushButton("Заказы (менеджер)")
+        self.manager_button.setFixedSize(150, 35)
+        self.manager_button.setStyleSheet("""
+            QPushButton { background-color: #2980B9; color: white; border-radius: 6px; font-weight: bold; border: none; }
+            QPushButton:hover { background-color: #1F6391; }
+        """)
+        
+        self.admin_button = QPushButton("Админ-панель")
+        self.admin_button.setFixedSize(120, 35)
+        self.admin_button.setStyleSheet("""
+            QPushButton { background-color: #8E44AD; color: white; border-radius: 6px; font-weight: bold; border: none; }
+            QPushButton:hover { background-color: #732D91; }
+        """)
+        
+        top_layout.addWidget(self.order_button)
+        top_layout.addWidget(self.manager_button)
+        top_layout.addWidget(self.admin_button)
+            
         self.btn_exit = QPushButton("Выход")
-        self.btn_exit.setFixedSize(100, 35)
+        self.btn_exit.setFixedSize(80, 35)
         self.btn_exit.setStyleSheet("""
-            QPushButton {
-                background-color: #E74C3C;
-                color: white;
-                border-radius: 6px;
-                font-weight: bold;
-                border: none;
-            }
-            QPushButton:hover {
-                background-color: #C0392B;
-            }
-            QPushButton:pressed {
-                background-color: #962D22;
-            }
+            QPushButton { background-color: #E74C3C; color: white; border-radius: 6px; font-weight: bold; border: none; }
+            QPushButton:hover { background-color: #C0392B; }
         """)
         self.btn_exit.clicked.connect(self.close)
         top_layout.addWidget(self.btn_exit)
         
         layout.addLayout(top_layout)
-        
-        # Небольшой пустой отступ снизу под шапкой
         layout.addSpacing(10)
         
-        # Подключение к базе данных
         self.db = Database()
         self.products = self.db.get_products()
         
-        # Область прокрутки (QScrollArea)
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setStyleSheet("""
-            QScrollArea { 
-                border: none; 
-                background-color: transparent; 
-            }
-            QScrollBar:vertical {
-                border: none;
-                background: #F1F1F1;
-                width: 10px;
-                margin: 0px;
-                border-radius: 5px;
-            }
-            QScrollBar::handle:vertical {
-                background: #C1C1C1;
-                min-height: 20px;
-                border-radius: 5px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background: #A8A8A8;
-            }
-        """)
+        self.scroll_area.setStyleSheet("QScrollArea { border: none; background-color: transparent; }")
         
         self.scroll_widget = QWidget()
         self.scroll_widget.setStyleSheet("background-color: transparent;")
@@ -242,46 +200,61 @@ class MainWindow(QMainWindow):
         self.cards_layout.setSpacing(12)
         self.cards_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         
-        # Отрисовка карточек
         for product in self.products:
             card_widget = create_card(product)
             self.cards_layout.addWidget(card_widget)
             
         self.scroll_area.setWidget(self.scroll_widget)
         layout.addWidget(self.scroll_area)
-        
         self.setCentralWidget(central)
+
+    def setup_role_interface(self):
+        if self.role_id == 3:
+            self.role_label.setText("Роль: Администратор")
+            self.admin_button.setVisible(True)
+            self.manager_button.setVisible(True)
+            self.order_button.setVisible(False)
+            self.btn_add_product.setVisible(True)
+            
+        elif self.role_id == 2:
+            self.role_label.setText("Роль: Менеджер")
+            self.manager_button.setVisible(True)
+            self.admin_button.setVisible(False)
+            self.order_button.setVisible(False)
+            self.btn_add_product.setVisible(True)
+            
+        elif self.role_id == 1:
+            self.role_label.setText("Роль: Клиент")
+            self.order_button.setVisible(True)
+            self.manager_button.setVisible(False)
+            self.admin_button.setVisible(False)
+            self.btn_add_product.setVisible(False)
+            
+        else:
+            self.role_label.setText("Роль: Гость")
+            self.order_button.setVisible(False)
+            self.manager_button.setVisible(False)
+            self.admin_button.setVisible(False)
+            self.btn_add_product.setVisible(False)
+
 
     def closeEvent(self, event):
         self.db.close_all()
         event.accept()
 
-
-# --- ИСПРАВЛЕННЫЙ БЛОК ЗАПУСКА ПРИЛОЖЕНИЯ (ЗАДАНИЕ 5.1) ---
 if __name__ == "__main__":
-    # Настройка для корректного отображения иконки в панели задач Windows
     if sys.platform == 'win32':
         import ctypes
         myappid = 'mycompany.myproduct.subproduct.version'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
-    # Инициализируем QT-приложение
     app = QApplication(sys.argv)
     
-    # 2. Создаем экземпляр базы данных 
-    db = Database()
+    from login_window import LoginWindow
+    db_instance = Database()
     
-    # Импортируем и запускаем окно входа ПЕРВЫМ
-    try:
-        from login_window import LoginWindow
-        # 3. Вместо MainWindow() строго запускаем LoginWindow(db)
-        window = LoginWindow(db=db)
-    except Exception as e:
-        # Эта строчка ОБЯЗАТЕЛЬНО должна быть сдвинута вправо на 8 пробелов!
-        print(f"[ОШИБКА] Не удалось импортировать LoginWindow: {e}")
-        window = MainWindow()  # Резервный запуск
+    # Сохраняем ссылку в глобальную переменную, чтобы окно не закрывалось мгновенно
+    global_auth_window = LoginWindow(db=db_instance)
+    global_auth_window.show()
     
-    # 4. Показываем СТАРТОВОЕ окно (теперь это окно входа)
-    window.show()
-     
     sys.exit(app.exec())
