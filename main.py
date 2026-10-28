@@ -99,10 +99,15 @@ def create_card(product):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, role_id=None, user_fio="Гость"):
+    # Шаг 2: Добавляем параметр full_name=None в конструктор главного окна
+    def __init__(self, role_id=None, full_name=None):
         super().__init__()
         self.role_id = role_id  
-        self.user_fio = user_fio  
+        
+        # Шаг 3: Сохраняем переданное ФИО в переменную объекта
+        self.full_name = full_name if full_name else "Гость"
+        self.user_fio = self.full_name  # Для совместимости с QLabel отображения
+        
         self.setup_ui()
         self.setup_role_interface()
 

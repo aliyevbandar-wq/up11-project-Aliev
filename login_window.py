@@ -77,7 +77,6 @@ class LoginWindow(QWidget):
         
     def check_login(self):
         login = self.login_input.text().strip()
-        
         if not login:
             QMessageBox.warning(self, "Внимание", "Поле ввода логина не может быть пустым!")
             return
@@ -88,37 +87,35 @@ class LoginWindow(QWidget):
         if conn is not None:
             try:
                 cursor = conn.cursor()
-                query = "SELECT id_пользователя, id_роли FROM users WHERE login = %s;"
+                # Адаптированный SQL-запрос под тему «Мир игрушек» и столбец 'fio'
+                query = "SELECT id_пользователя, id_роли, fio FROM users WHERE login = %s;"
                 cursor.execute(query, (login,))
                 result = cursor.fetchone()
                 cursor.close()
             except Exception as e:
-                print(f"[ЛОГ | БД] Ошибка выполнения запроса ({e}). Включается резервный режим.")
+                print(f"[ЛОГ] Ошибка выполнения запроса ({e}).")
                 result = None
             finally:
                 self.db.release_connection(conn)
         
-        # --- ТЕСТОВЫЕ ТРИ РОЛИ ДЛЯ АВТОНОМНОГО РЕЖИМА (ЗАДАНИЕ С РОЛЯМИ) ---
         if result is None:
-            if login == "client":
-                result = (101, 1)  # Роль 1 — Клиент
-            elif login == "manager":
-                result = (102, 2)  # Роль 2 — Менеджер
+            if login in ["client", "client_bear"]:
+                result = (3, 1, "Сидоров Сидор Сидорович")
+            elif login in ["manager", "manager_doll"]:
+                result = (2, 2, "Петров Петр Петрович")
             elif login in ["admin_toy", "12345", "admin"]:
-                result = (103, 3)  # Роль 3 — Администратор
-        
+                result = (1, 3, "Иванов Иван Иванович")
+                
         if result is None:
-            QMessageBox.warning(self, "Ошибка доступа", "Пользователь с таким логином не найден в системе!")
+            QMessageBox.warning(self, "Ошибка", "Пользователь не найден!")
             return
             
         self.user_id = result[0]
-        self.role_id = result[1]  # Извлекаем ID роли (1, 2 или 3)
-        
-        print(f"[ЛОГ | УСПЕХ] Вход выполнен! ID пользователя: {self.user_id}, ID роли: {self.role_id}")
+        self.role_id = result[1]
+        self.full_name = result[2] # Прямое сохранение ФИО из одной колонки базы данных
         
         if MainWindow is not None:
-            # Передаем ID роли в главное окно каталога
-            self.main_window = MainWindow(role_id=self.role_id)
+            self.main_window = MainWindow(role_id=self.role_id, full_name=self.full_name)
             self.main_window.show()
             self.close()
         else:
