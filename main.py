@@ -99,11 +99,13 @@ def create_card(product):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, role_id=None):
+    def __init__(self, role_id=None, user_fio="Гость"):
         super().__init__()
         self.role_id = role_id  
+        self.user_fio = user_fio  
         self.setup_ui()
         self.setup_role_interface()
+
 
     def setup_ui(self):
         self.setWindowTitle("Мир игрушек — Каталог")
@@ -140,6 +142,10 @@ class MainWindow(QMainWindow):
         top_layout.addWidget(self.role_label)
         
         top_layout.addStretch()
+        self.user_label = QLabel(f"👤 {self.user_fio}")
+        self.user_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #2C3E50; border: none; padding-right: 15px;")
+        top_layout.addWidget(self.user_label)
+
         
         self.btn_add_product = QPushButton("Добавить товар")
         self.btn_add_product.setFixedSize(120, 35)
@@ -180,6 +186,9 @@ class MainWindow(QMainWindow):
             QPushButton { background-color: #E74C3C; color: white; border-radius: 6px; font-weight: bold; border: none; }
             QPushButton:hover { background-color: #C0392B; }
         """)
+        self.btn_exit.clicked.connect(self.logout_user)
+        top_layout.addWidget(self.btn_exit)
+
         self.btn_exit.clicked.connect(self.close)
         top_layout.addWidget(self.btn_exit)
         
@@ -237,6 +246,16 @@ class MainWindow(QMainWindow):
             self.admin_button.setVisible(False)
             self.btn_add_product.setVisible(False)
 
+    def logout_user(self):
+        from login_window import LoginWindow
+        # Создаем новый чистый объект базы данных с открытым пулом соединений
+        new_db_instance = Database()
+        # Передаем новую базу данных в открывающееся окно авторизации
+        self.new_auth = LoginWindow(db=new_db_instance)
+        self.new_auth.show()
+        self.close()
+
+
 
     def closeEvent(self, event):
         self.db.close_all()
@@ -257,4 +276,7 @@ if __name__ == "__main__":
     global_auth_window = LoginWindow(db=db_instance)
     global_auth_window.show()
     
-    sys.exit(app.exec())
+    sys.exit(app.exec())\
+
+
+    
