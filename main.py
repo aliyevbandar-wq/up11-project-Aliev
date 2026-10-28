@@ -122,8 +122,12 @@ def create_card(product):
 
 # Создание класса главного окна приложения
 class MainWindow(QMainWindow):
-    def __init__(self):
+    # Конструктор принимает аргумент role_id со значением по умолчанию (Задание 4.1)
+    def __init__(self, role_id=None):
         super().__init__()
+        
+        # Сохраняем переданную роль для использования в разграничении прав
+        self.role_id = role_id
         
         self.setWindowTitle("Мир игрушек — Каталог")
         self.resize(850, 650)
@@ -151,14 +155,14 @@ class MainWindow(QMainWindow):
         top_layout.setSpacing(15) 
         top_layout.setContentsMargins(0, 0, 0, 0)
         
-        # 1. Логотип слева (Размер увеличен до 150x150)
+        # 1. Логотип слева (Задан точный компактный размер 50x50 пикселей)
         logo = QLabel()
-        logo.setFixedSize(150, 150)  
+        logo.setFixedSize(50, 50)  
         logo.setStyleSheet("border: none;")
         
         logo_pixmap = QPixmap("resources/logo.png")
         if not logo_pixmap.isNull():
-            logo.setPixmap(logo_pixmap.scaled(150, 150, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            logo.setPixmap(logo_pixmap.scaled(50, 50, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
         logo.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)       
         top_layout.addWidget(logo)
         
@@ -252,15 +256,32 @@ class MainWindow(QMainWindow):
         self.db.close_all()
         event.accept()
 
+
+# --- ИСПРАВЛЕННЫЙ БЛОК ЗАПУСКА ПРИЛОЖЕНИЯ (ЗАДАНИЕ 5.1) ---
 if __name__ == "__main__":
+    # Настройка для корректного отображения иконки в панели задач Windows
     if sys.platform == 'win32':
         import ctypes
         myappid = 'mycompany.myproduct.subproduct.version'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
+    # Инициализируем QT-приложение
     app = QApplication(sys.argv)
     
-    window = MainWindow()
+    # 2. Создаем экземпляр базы данных 
+    db = Database()
+    
+    # Импортируем и запускаем окно входа ПЕРВЫМ
+    try:
+        from login_window import LoginWindow
+        # 3. Вместо MainWindow() строго запускаем LoginWindow(db)
+        window = LoginWindow(db=db)
+    except Exception as e:
+        # Эта строчка ОБЯЗАТЕЛЬНО должна быть сдвинута вправо на 8 пробелов!
+        print(f"[ОШИБКА] Не удалось импортировать LoginWindow: {e}")
+        window = MainWindow()  # Резервный запуск
+    
+    # 4. Показываем СТАРТОВОЕ окно (теперь это окно входа)
     window.show()
      
     sys.exit(app.exec())

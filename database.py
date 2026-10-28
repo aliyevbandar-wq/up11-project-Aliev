@@ -35,28 +35,44 @@ class Database:
         if self.connection_pool and conn:
             self.connection_pool.putconn(conn)
 
-    # ========================================================
-    # ВОТ СЮДА МЫ ЕГО НАПИСАЛИ (ЗАДАНИЕ 3.1):
-    # ========================================================
     def get_products(self):
-        """3.1. Метод получает список всех товаров из таблицы products."""
+        """Метод получает список всех товаров из таблицы products."""
         conn = self.get_connection()
         if conn is None:
             return []
 
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM products;")
+            cursor.execute("SELECT * FROM public.products;")
             return cursor.fetchall()
         except Exception as e:
-            print(f"Ошибка при выполнении запроса: {e}")
+            print(f"Ошибка при выполнении запроса продуктов: {e}")
             return []
         finally:
             if "cursor" in locals():
                 cursor.close()
             self.release_connection(conn)
 
-    # ========================================================
+    def check_user_login(self, login_text):
+        """Проверяет существование логина в таблице public.users и возвращает данные пользователя"""
+        conn = self.get_connection()
+        if conn is None:
+            return None
+
+        try:
+            cursor = conn.cursor()
+            # Добавлено явное указание схемы public для устранения ошибки отсутствия отношения
+            query = "SELECT id_пользователя, login, id_роли FROM public.users WHERE login = %s;"
+            cursor.execute(query, (login_text,))
+            user = cursor.fetchone()
+            return user  # Вернет кортеж (id, login, role_id) или None
+        except Exception as e:
+            print(f"[БД | ОШИБКА] Не удалось проверить логин: {e}")
+            return None
+        finally:
+            if "cursor" in locals():
+                cursor.close()
+            self.release_connection(conn)
 
     def close_all(self):
         """Закрывает все соединения в пуле перед завершением программы."""
@@ -65,8 +81,9 @@ class Database:
             print("Пул соединений закрыт.")
 
 
-# Пример инициализации
+# Блок тестирования файла
 if __name__ == "__main__":
     db = Database()
     print("Список игрушек:", db.get_products())
+    print("Тест авторизации admin_toy:", db.check_user_login("admin_toy"))
     db.close_all()
