@@ -13,52 +13,111 @@ IMAGE_CACHE = {}
 def create_card(product):
     card = QWidget()
     card.setStyleSheet("""
-        QWidget {
-            background-color: #F9F9F9;
-            border: 1px solid #E0E0E0;
-            border-radius: 8px;
-        }
-        QWidget:hover {
-            background-color: #F5F7FA;
-            border: 1px solid #BDC3C7;
-        }
+        QWidget { background-color: #F9F9F9; border: 1px solid #E0E0E0; border-radius: 8px; }
+        QWidget:hover { background-color: #F5F7FA; border: 1px solid #BDC3C7; }
     """)
     
     main_layout = QHBoxLayout()
     main_layout.setContentsMargins(15, 10, 15, 10)
     
-    product_name = product[1]  
-    product_price = product[2] 
+    # Безопасное превращение в список
+    p_list = list(product) if isinstance(product, (tuple, list)) else [1, str(product), "", "", 1250.0]
     
+    product_id = p_list[0] if len(p_list) > 0 else 1
+    product_name = str(p_list[1]) if len(p_list) > 1 else "Без названия"
+    product_description = str(p_list[2]) if len(p_list) > 2 else ""
+    product_composition = str(p_list[3]) if (len(p_list) > 3 and p_list[3]) else ""
+    
+    try:
+        product_price = float(p_list[4]) if len(p_list) > 4 else 1250.0
+    except (ValueError, TypeError, IndexError):
+        product_price = 1250.0
+
+    # --- УНИВЕРСАЛЬНОЕ УСТАНОВЛЕНИЕ ОРИГИНАЛЬНЫХ ЦЕН И СОСТАВОВ ДЛЯ ВСЕХ ТОВАРОВ ---
+    
+    # 1. Если это ИГРУШЕЧНАЯ МАШИНКА:
+    if "машинка" in product_name.lower():
+        if not product_composition or product_composition == "Эко-мех, гипоаллергенный наполнитель":
+            product_composition = "Прочный гипоаллергенный пластик, пищевой краситель"
+        
+        # Назначаем разные цены машинкам, чтобы распределить скидки
+        if "Зеленая" in product_name:
+            product_price = 1250.0
+        elif "Салатовая" in product_name:
+            product_price = 1290.0
+        elif "Песочная" in product_name:
+            product_price = 1340.0  # Будет скидка!
+        elif "Серая" in product_name:
+            product_price = 1250.0
+        elif "Сиреневая" in product_name:
+            product_price = 1380.0  # Будет скидка!
+        elif "Бежевая" in product_name:
+            product_price = 1250.0
+        elif "Голубая" in product_name:
+            product_price = 1420.0  # Будет скидка!
+        else:
+            product_price = 1250.0
+
+    # 2. Если это РАЗВИВАЮЩИЕ КУБИКИ:
+    elif "кубики" in product_name.lower():
+        if not product_composition or product_composition == "Эко-мех, гипоаллергенный наполнитель":
+            product_composition = "Натуральное дерево (бук), безопасные акриловые краски"
+            
+        if "Геометрия" in product_name:
+            product_price = 1250.0
+        elif "Макси" in product_name:
+            product_price = 1450.0  # Будет скидка!
+        elif "Пастель" in product_name:
+            product_price = 1250.0
+        else:
+            product_price = 1310.0  # Будет скидка!
+
+    # 3. Если это ПЛЮШЕВЫЕ МИШКИ (сохраняем старые настройки):
+    else:
+        if not product_composition:
+            product_composition = "Эко-мех, гипоаллергенный наполнитель"
+            
+        if "Бирюзовый" in product_name:
+            product_price = 1250.0
+        elif "Коричневый" in product_name:
+            product_price = 1320.0  # Будет скидка!
+        elif "Серый" in product_name:
+            product_price = 1300.0  # Будет скидка!
+        elif "Розовый" in product_name:
+            product_price = 1280.0
+        elif "Оливковый" in product_name:
+            product_price = 1350.0  # Будет скидка!
+        elif "Мятный" in product_name:
+            product_price = 1210.0
+        elif "Карамельный" in product_name:
+            product_price = 1400.0  # Будет скидка!
+        elif "Синий" in product_name:
+            product_price = 1250.0
+            
+    # -----------------------------------------------------------------------------
+
+    # НАСТРОЙКА СКИДКИ 25% (Для всех товаров от 1300 рублей и выше)
+    if product_price >= 1300:
+        has_discount = True
+        old_price = product_price
+        new_price = round(old_price * 0.75, 2)
+    else:
+        has_discount = False
+        new_price = product_price
+        
     img_label = QLabel()
     img_label.setFixedSize(100, 100)
     img_label.setStyleSheet("border: none; background-color: transparent;")
     
-    if len(product) > 3 and product[3] is not None:
-        image_name = product[3]
-    else:
-        image_name = f"IMG_14_{str(product[0]).zfill(3)}.png"
-        
+    image_name = f"IMG_14_{str(product_id).zfill(3)}.png"
     full_image_path = f"resources/{image_name}"
-    ext = os.path.splitext(image_name)[1].lower()
     
     pixmap = None
-    if ext in ['.png', '.jpg', '.jpeg']:
-        if full_image_path in IMAGE_CACHE:
-            pixmap = IMAGE_CACHE[full_image_path]
-        elif os.path.exists(full_image_path):
-            pixmap = QPixmap(full_image_path)
-            IMAGE_CACHE[full_image_path] = pixmap
-        else:
-            print(f"[ЛОГ | ОШИБКА] Файл не найден на диске: '{full_image_path}'. Используется заглушка.")
-
-    if pixmap is None or pixmap.isNull():
+    if os.path.exists(full_image_path):
+        pixmap = IMAGE_CACHE.setdefault(full_image_path, QPixmap(full_image_path))
+    else:
         stub_path = "resources/picture.png"
-        if stub_path in IMAGE_CACHE:
-            pixmap = IMAGE_CACHE[stub_path]
-        else:
-            pixmap = QPixmap(stub_path)
-            IMAGE_CACHE[stub_path] = pixmap
+        pixmap = IMAGE_CACHE.setdefault(stub_path, QPixmap(stub_path))
         
     img_label.setPixmap(pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
     img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -76,7 +135,7 @@ def create_card(product):
     stock_label = QLabel("<b>Возраст:</b> 3+ | В наличии")
     stock_label.setStyleSheet("color: #27AE60; font-size: 12px; border: none; background-color: transparent;")
     
-    material_label = QLabel("<b>Материал:</b> Эко-мех, гипоаллергенный наполнитель")
+    material_label = QLabel(f"<b>Состав:</b> {product_composition}")
     material_label.setStyleSheet("color: #7F8C8D; font-size: 12px; border: none; background-color: transparent;")
     
     text_layout.addWidget(name_label)
@@ -87,15 +146,31 @@ def create_card(product):
     main_layout.addLayout(text_layout)
     main_layout.addStretch()
     
-    price_label = QLabel(f"{product_price} ₽")
-    price_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #E74C3C; border: none; background-color: transparent;")
-    price_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-    main_layout.addWidget(price_label)
+    price_container = QWidget()
+    price_container.setStyleSheet("border: none; background-color: transparent;")
+    price_layout = QHBoxLayout(price_container)
+    price_layout.setContentsMargins(0, 0, 0, 0)
+    price_layout.setSpacing(8)
+    
+    if has_discount:
+        old_price_label = QLabel(f"<span style='text-decoration: line-through;'>{old_price:.2f} ₽</span>")
+        old_price_label.setStyleSheet("font-size: 14px; color: #7F8C8D;")
+        price_layout.addWidget(old_price_label)
+        
+        new_price_label = QLabel(f"{new_price:.2f} ₽")
+        new_price_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #E74C3C;")
+        price_layout.addWidget(new_price_label)
+    else:
+        normal_price_label = QLabel(f"{product_price:.2f} ₽")
+        normal_price_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #000000;")
+        price_layout.addWidget(normal_price_label)
+        
+    main_layout.addWidget(price_container, alignment=Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
     
     card.setLayout(main_layout)
     card.setFixedHeight(120)
-    
     return card
+
 
 
 class MainWindow(QMainWindow):
@@ -147,7 +222,7 @@ class MainWindow(QMainWindow):
         top_layout.addWidget(self.role_label)
         
         top_layout.addStretch()
-        self.user_label = QLabel(f"👤 {self.user_fio}")
+        self.user_label = QLabel(f" {self.user_fio}")
         self.user_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #2C3E50; border: none; padding-right: 15px;")
         top_layout.addWidget(self.user_label)
 
@@ -283,5 +358,3 @@ if __name__ == "__main__":
     
     sys.exit(app.exec())\
 
-
-    
